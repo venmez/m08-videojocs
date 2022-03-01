@@ -22,21 +22,26 @@ public class MyGdxGame extends ApplicationAdapter {
 	private Array<Rectangle> raindrops;
 	private long lastDropTime;
 	private Texture dropImage;
+	private Texture playerLaserImage;
+	private Array<Rectangle> playerLasers;
 	
 	@Override
 	public void create () {
 		batch = new SpriteBatch();
 		img = new Texture("img/spaceship.png");
 		dropImage = new Texture("img/laserGreen15.png");
+		playerLaserImage = new Texture("img/laserBlue01.png");
 		player = new Rectangle(0, 0, 150, 150);
 		camera = new OrthographicCamera();
 		camera.setToOrtho(false, 800, 480);
 		raindrops = new Array<Rectangle>();
-		 spawnRaindrop();
+		playerLasers = new Array<Rectangle>();
+		spawnRaindrop();
+		spawnPlayerLaser();
 	}
 
 	@Override
-	public void render () {
+	public void render() {
 		ScreenUtils.clear(0, 0, 0, 0);
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
@@ -46,10 +51,16 @@ public class MyGdxGame extends ApplicationAdapter {
 		for(Rectangle raindrop: raindrops) {
 		      batch.draw(dropImage, raindrop.x, raindrop.y);
 		   }
+		for(Rectangle playerLaser : playerLasers) {
+			batch.draw(playerLaserImage, playerLaser.x, playerLaser.y);
+		}
 		 if(Gdx.input.isKeyPressed(Input.Keys.LEFT)) player.x -= 5;
 		 if(Gdx.input.isKeyPressed(Input.Keys.RIGHT)) player.x += 5;
 		 if(Gdx.input.isKeyPressed(Input.Keys.UP)) player.y += 5;
 		 if(Gdx.input.isKeyPressed(Input.Keys.DOWN)) player.y -= 5;
+		 if(Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+			 spawnPlayerLaser();
+		 }
 		 if(player.x < 0) player.x = 0;
 		 if(player.x > Gdx.graphics.getWidth()) player.x = Gdx.graphics.getWidth();
 		 if(player.y < 0) player.y = 0;
@@ -63,6 +74,12 @@ public class MyGdxGame extends ApplicationAdapter {
 				if(raindrop.overlaps(player)) {
 		            iter.remove();
 		         }
+			}
+			for (ArrayIterator<Rectangle> iter = playerLasers.iterator(); iter.hasNext();) {
+				Rectangle playerLaser = iter.next();
+				playerLaser.y += 200 * Gdx.graphics.getDeltaTime();
+				if (playerLaser.y + 64 < 0)
+					iter.remove();
 			}
 			
 		batch.end();
@@ -83,6 +100,15 @@ public class MyGdxGame extends ApplicationAdapter {
 	      raindrops.add(raindrop);
 	      lastDropTime = TimeUtils.nanoTime();
 	   }
+	
+	private void spawnPlayerLaser () {
+		Rectangle  playerLaser = new Rectangle();
+		playerLaser.x = player.x + 70;
+		playerLaser.y = player.y + 100;
+		playerLaser.width = 64;
+		playerLaser.height = 64;
+		playerLasers.add(playerLaser);
+	}
 	
 	
 }
