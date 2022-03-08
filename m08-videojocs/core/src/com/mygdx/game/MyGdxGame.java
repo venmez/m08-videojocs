@@ -31,12 +31,15 @@ public class MyGdxGame extends ApplicationAdapter {
 	private Array<Rectangle> enemyLasers;
 	private Rectangle enemy;
 	private Texture enemyImage;
+	private long lastEnemyShootTime;
 	private static final int VELOCITAT = 250;
 	private float velFinal = 0;
 	BitmapFont playerScoreFont;
 	int puntuacioPlayer = 0;
 	BitmapFont playerLives;
 	int playerRemainingLives = 5;
+	int enemyRemainingLives = 10;
+	boolean enemyLeft = false;
 	
 	@Override
 	public void create () {
@@ -68,7 +71,8 @@ public class MyGdxGame extends ApplicationAdapter {
 		batch.setProjectionMatrix(camera.combined);
 		batch.begin();
 		playerScoreFont.draw(batch, "Player: "+ puntuacioPlayer, 30, Gdx.graphics.getHeight() - 30);
-		playerScoreFont.draw(batch, "Lives: "+ playerRemainingLives, 30, Gdx.graphics.getHeight() - 60);
+		playerScoreFont.draw(batch, "Health: "+ playerRemainingLives, 30, Gdx.graphics.getHeight() - 60);
+		playerScoreFont.draw(batch, "Enemy health: " + enemyRemainingLives, Gdx.graphics.getWidth(), Gdx.graphics.getHeight() - 60);
 		//Dibujar nave aliada
 		batch.draw(img, player.getX(), player.getY(), player.getWidth(), player.getHeight());
 		//Dibujar nave enemiga
@@ -96,7 +100,7 @@ public class MyGdxGame extends ApplicationAdapter {
 			
 
 		 //End game
-		 if (playerRemainingLives == 0) {
+		 if (playerRemainingLives == 0 || enemyRemainingLives == 0) {
 			 Gdx.app.exit();
 		}
 		batch.end();
@@ -148,12 +152,14 @@ public class MyGdxGame extends ApplicationAdapter {
 	}
 	
 	private void spawnEnemyLaser() {
+		
 		Rectangle enemyLaser = new Rectangle();
 		enemyLaser.x = enemy.x + 40;
 		enemyLaser.y = enemy.y - 50;
 		enemyLaser.width = 64;
 		enemyLaser.height = 64;
 		enemyLasers.add(enemyLaser);
+		lastEnemyShootTime = TimeUtils.nanoTime();
 	}
 
 
@@ -171,14 +177,12 @@ public class MyGdxGame extends ApplicationAdapter {
 	
 	private void enemyMovement() {
 		velFinal = VELOCITAT * Gdx.graphics.getDeltaTime();
-		if (Gdx.input.isKeyPressed(Input.Keys.A))
-			enemy.x -= velFinal;
-		if (Gdx.input.isKeyPressed(Input.Keys.D))
-			enemy.x += velFinal;
-		if (Gdx.input.isKeyPressed(Input.Keys.W))
-			enemy.y += velFinal;
-		if (Gdx.input.isKeyPressed(Input.Keys.S))
-			enemy.y -= velFinal;
+		if (!enemyLeft) {
+			enemy.setX(enemy.x -= velFinal);
+		}else {
+			enemy.setX(enemy.x += velFinal);
+		}
+
 	}
 
 	private void playerShootMovement() {
@@ -186,11 +190,14 @@ public class MyGdxGame extends ApplicationAdapter {
 		for (ArrayIterator<Rectangle> iter = playerLasers.iterator(); iter.hasNext();) {
 			Rectangle playerLaser = iter.next();
 			playerLaser.y += 200 * Gdx.graphics.getDeltaTime();
-			if (playerLaser.y + 64 < 0)
+			if (playerLaser.y + 64 > Gdx.graphics.getHeight()) {
 				iter.remove();
+			puntuacioPlayer--;
+			}
 			if (playerLaser.overlaps(enemy)) {
 				iter.remove();
-				puntuacioPlayer += 1;
+				puntuacioPlayer ++;
+				enemyRemainingLives--;
 			}
 		}
 		for (Rectangle playerLaser : playerLasers) {
@@ -199,12 +206,14 @@ public class MyGdxGame extends ApplicationAdapter {
 	}
 	
 	private void enemyShootMovement() {
-
+		if (TimeUtils.nanoTime() - lastEnemyShootTime > 1000000000)
+			spawnEnemyLaser();
 		for (ArrayIterator<Rectangle> iter = enemyLasers.iterator(); iter.hasNext();) {
 			Rectangle enemyLaser = iter.next();
 			enemyLaser.y -= 200 * Gdx.graphics.getDeltaTime();
-			if (enemyLaser.y + 64 < 0)
+			if (enemyLaser.y + 64 < 0) {
 				iter.remove();
+			}
 			if (enemyLaser.overlaps(player)) {
 				iter.remove();
 				playerRemainingLives--;
@@ -219,8 +228,8 @@ public class MyGdxGame extends ApplicationAdapter {
 		if (player.x < 0)
 			player.x = 0;
 		
-		if (player.x > Gdx.graphics.getWidth())
-			player.x = Gdx.graphics.getWidth();
+		if (player.x > Gdx.graphics.getWidth() + player.width)
+			player.x = Gdx.graphics.getWidth() + player.width;
 		
 		if (player.y < 0)
 			player.y = 0;
@@ -228,18 +237,25 @@ public class MyGdxGame extends ApplicationAdapter {
 		if (player.y > Gdx.graphics.getHeight() - player.height)
 			player.y = Gdx.graphics.getHeight() - player.height;
 		
-		if (enemy.x < 0)
+		if (enemy.x < 0) {
 			enemy.x = 0;
+			enemyLeft = true;
+		}
 		
-		if (enemy.x > Gdx.graphics.getWidth())
-			enemy.x = Gdx.graphics.getWidth();
+		if (enemy.x > Gdx.graphics.getWidth() + player.width) {
+			enemy.x = Gdx.graphics.getWidth() + player.width;
+		enemyLeft = false;
+		}
 		
-		if (enemy.y < 0)
+		if (enemy.y < 0) {
 			enemy.y = 0;
+			
+		}
 		
-		if (enemy.y > Gdx.graphics.getHeight() - enemy.height)
+		if (enemy.y > Gdx.graphics.getHeight() - enemy.height) {
 			enemy.y = Gdx.graphics.getHeight() - enemy.height;
-		
+			
+		}
 	}
 
 }
